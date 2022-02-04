@@ -7,7 +7,6 @@
 
 import streamlit as st
 import time
-from gensim.summarization import summarize
 from googletrans import Translator
 import nltk
 from nltk.tokenize import word_tokenize, sent_tokenize
@@ -111,11 +110,11 @@ if nav == 'Summarize text':
             else:
                 with st.spinner('Processing...'):
                     time.sleep(2)
-                    t_r = summarize(input_su, word_count=50, ratio=0.05)
+                    
                     tagged_lettre=Sentence(input_su)
                     tagger.predict(tagged_lettre)
-                    #result_t_r = (str(len(t_r)) + ' characters' + ' ('"{:.0%}".format(len(t_r)/len(input_su)) + ' of original content)')
-                    result_t_r=str(tagged_lettre)
+                    
+                    result_t_r=(str(tagged_lettre))
                     st.markdown('___')
                     st.write('TextRank Model')
                     st.caption(result_t_r)
@@ -179,8 +178,10 @@ if nav == 'Summarize text':
                     if len(string_data) < 1000 or len(string_data) > 10000:
                         st.error('Please upload a file between 1,000 and 10,000 characters')
                     else:
-                        t_r = summarize(string_data, word_count=50, ratio=0.05)
-                        result_t_r = (str(len(t_r)) + ' characters' + ' ('"{:.0%}".format(len(t_r)/len(string_data)) + ' of original content)')
+                        tagged_lettre=Sentence(string_data)
+                        tagger.predict(tagged_lettre)
+                        
+                        result_t_r = (str(tagged_lettre))
                         st.markdown('___')
                         st.write('TextRank Model')
                         st.caption(result_t_r)
