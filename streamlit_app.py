@@ -6,6 +6,14 @@
 ##########
 
 import streamlit as st
+
+st.set_page_config(page_title="SYNTHIA", 
+                   page_icon=":robot_face:",
+                   layout="wide",
+                   initial_sidebar_state="expanded"
+                   )
+
+
 import time
 from googletrans import Translator
 import nltk
@@ -36,11 +44,6 @@ tagger = load_model()
 #PAGE SET UP
 #############
 
-st.set_page_config(page_title="SYNTHIA", 
-                   page_icon=":robot_face:",
-                   layout="wide",
-                   initial_sidebar_state="expanded"
-                   )
 
 def p_title(title):
     st.markdown(f'<h3 style="text-align: left; color:#F63366; font-size:28px;">{title}</h3>', unsafe_allow_html=True)
