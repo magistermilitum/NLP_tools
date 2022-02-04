@@ -24,7 +24,7 @@ from flair.models import SequenceTagger
 
 # loading the model
 
-@st.cache
+@st.cache(allow_output_mutation=True)
 def load_model():
 	  return SequenceTagger.load("models/PERS_final_model_24_01_2022.pt")
 
