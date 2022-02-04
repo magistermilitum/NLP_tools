@@ -23,8 +23,12 @@ from flair.data import Sentence
 from flair.models import SequenceTagger
 
 # loading the model
-#the Flair model is based on modern french texts, some inaccuracies when applying it on pre-classic french (1500-1650)
-tagger = SequenceTagger.load("models/PERS_final_model_24_01_2022.pt")
+
+@st.cache
+def load_model():
+	  return SequenceTagger.load("models/PERS_final_model_24_01_2022.pt")
+
+tagger = load_model()
 
 
 
