@@ -114,10 +114,10 @@ if nav == 'Summarize text':
                     tagged_lettre=Sentence(input_su)
                     tagger.predict(tagged_lettre)
                     
-                    result_t_r=(str(tagged_lettre))
+                    t_r=(str(tagged_lettre))
                     st.markdown('___')
                     st.write('TextRank Model')
-                    st.caption(result_t_r)
+                    st.caption("que bonito el NER")
                     st.success(t_r) 
                     my_parser = PlaintextParser.from_string(input_su,Tokenizer('english'))
                     lex_rank_summarizer = LexRankSummarizer()
