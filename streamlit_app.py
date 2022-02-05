@@ -80,7 +80,7 @@ def ner(sentence):
 def parts_dis(sentence):
   DIS_model = SequenceTagger.load('models/discours_parts_05_02_2022.pt')
 
-  DIS_sentence= Sentence(test)
+  DIS_sentence= Sentence(sentence)
   DIS_model.predict(DIS_sentence)
   
   
