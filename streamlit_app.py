@@ -46,25 +46,41 @@ def word2CONLL (sentence):
 
 @st.cache()
 def ner(sentence):
-	try:
-		# make a sentence
-		sentence = Sentence(sentence)
+  # make a sentence
+  sentence = Sentence(sentence)
 
-		# load the NER tagger
-		tagger = SequenceTagger.load("models/PERS_final_model_24_01_2022.pt")
+  # load the NER tagger
+  tagger = SequenceTagger.load("/models/PERS_final_model_24_01_2022.pt")
+  tagger.predict(sentence)
+  
+  CONLL_html=[str(token).split("Token: ")[1].split()[1] for token in sentence]
+  tokenized_text=[str(token).split("Token: ")[1].split()[1] for token in sentence]
 
-		tagger.predict(sentence)
+  index_entities=["O"]*len(tokenized_text)
 
-		entities = []
-		# iterate over entities
-		for entity in sentence.get_spans('ner'):
-		    entities.append(entity)
+  dict_colors={"PERS": "255FD2", "ORG": "EE4220", "MISC":"19842E", "LOC":"7A1A7A"}
 
-		return entities
 
-	except:
-		print("flair NER error")
-		return
+
+  for entity in sentence.get_spans('ner'):
+    x=" ".join([(str(y).split("Token: ")[1]) for y in entity]).split()[::2]
+    x=[int(x[0])-1, int(x[-1])]
+
+    type_ent=str(entity).split("− Labels: ")[1].split()[0]
+    
+    if x[1]-x[0]>1: #if we are leading with a more one-unit entity. vg: Madame de Parme
+      index_entities[x[0]:x[1]]=["B-"+type_ent]+["I-"+type_ent]*(x[1]-x[0]-1)
+      if x[1]-x[0]>2:
+        CONLL_html[x[0]:x[1]]=['<span style="background-color: #'+dict_colors[type_ent]+'; padding:1px">'+CONLL_html[x[0]]]+[x for x in CONLL_html[x[0]+1:x[1]-1]]+[CONLL_html[x[1]-1]+'</span>']
+      else:
+        CONLL_html[x[0]:x[1]]=['<span style="background-color: #'+dict_colors[type_ent]+'; padding:1px">'+CONLL_html[x[0]]]+[CONLL_html[x[1]-1]+'</span>']
+    else: #single entities
+      index_entities[x[0]:x[1]]=["B-"+type_ent]*(x[1]-x[0])
+      CONLL_html[x[0]:x[1]]=['<span style="background-color: #'+dict_colors[type_ent]+'; padding:1px">'+CONLL_html[x[0]:x[1]][0]+'</span>']
+
+  CONLL=list(zip(tokenized_text, index_entities))
+  return CONLL_html
+
 
 #############
 #PAGE SET UP
@@ -146,7 +162,7 @@ if nav == 'Summarize text':
   
                     t_r=("cochino")
                     st.markdown('___')
-                    st.write(str(ner(input_su)))
+                    st.write(ner(input_su))
                     st.caption("WHAT?")
                     st.success("Hola abuelita") 
                     my_parser = PlaintextParser.from_string(input_su,Tokenizer('english'))
