@@ -48,10 +48,10 @@ def word2CONLL (sentence):
 def ner(sentence):
 	try:
 		# make a sentence
-		sentence = flair.data.Sentence(sentence)
+		sentence = Sentence(sentence)
 
 		# load the NER tagger
-		tagger = flair.models.SequenceTagger.load("models/PERS_final_model_24_01_2022.pt")
+		tagger = SequenceTagger.load("models/PERS_final_model_24_01_2022.pt")
 
 		tagger.predict(sentence)
 
