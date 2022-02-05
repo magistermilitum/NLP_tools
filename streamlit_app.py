@@ -156,7 +156,7 @@ if nav == 'Summarize text':
   
                     t_r=("cochino")
                     st.markdown('___')
-                    st.markdown(ner(input_su))
+                    st.write(ner(input_su), unsafe_allow_html=True)
                     st.caption("WHAT?")
                     st.success("Hola abuelita") 
                     my_parser = PlaintextParser.from_string(input_su,Tokenizer('english'))
