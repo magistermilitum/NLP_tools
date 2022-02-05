@@ -68,6 +68,7 @@ def ner(sentence):
       CONLL_html[x[0]:x[1]]=['<span style="background-color: #'+dict_colors[type_ent]+'; padding:1px">'+CONLL_html[x[0]:x[1]][0]+'</span>']
 
   CONLL=list(zip(tokenized_text, index_entities))
+  CONLL_html=" ".join(CONLL_html)
   return CONLL_html
 
 
