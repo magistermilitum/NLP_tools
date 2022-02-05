@@ -32,17 +32,6 @@ from flair.models import SequenceTagger
 
 # loading the model
 
-@st.cache(allow_output_mutation=True)
-def load_model():
-	  return SequenceTagger.load("models/PERS_final_model_24_01_2022.pt")
-
-tagger = load_model()
-
-def word2CONLL (sentence):
-  tokenized_text=[str(token).split("Token: ")[1].split()[1] for token in sentence]
-
-  return " ".join(tokenized_text)
-
 
 @st.cache()
 def ner(sentence):
@@ -50,7 +39,7 @@ def ner(sentence):
   sentence = Sentence(sentence)
 
   # load the NER tagger
-  tagger = SequenceTagger.load("/models/PERS_final_model_24_01_2022.pt")
+  tagger = SequenceTagger.load("models/PERS_final_model_24_01_2022.pt")
   tagger.predict(sentence)
   
   CONLL_html=[str(token).split("Token: ")[1].split()[1] for token in sentence]
