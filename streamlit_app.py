@@ -33,22 +33,13 @@ from flair.models import SequenceTagger
 # loading the model
 
 
-@st.cache()
-def ner(sentence):
-  # make a sentence
-  sentence = Sentence(sentence)
-
-  # load the NER tagger
-  tagger = SequenceTagger.load("models/PERS_final_model_24_01_2022.pt")
-  tagger.predict(sentence)
-  
+def WORD2HTML(sentence):
   CONLL_html=[str(token).split("Token: ")[1].split()[1] for token in sentence]
   tokenized_text=[str(token).split("Token: ")[1].split()[1] for token in sentence]
 
   index_entities=["O"]*len(tokenized_text)
 
   dict_colors={"PERS": "255FD2", "ORG": "EE4220", "MISC":"19842E", "LOC":"7A1A7A"}
-
 
 
   for entity in sentence.get_spans('ner'):
@@ -68,8 +59,21 @@ def ner(sentence):
       CONLL_html[x[0]:x[1]]=['<span style="background-color: #'+dict_colors[type_ent]+'; padding:1px">'+CONLL_html[x[0]:x[1]][0]+'</span>']
 
   CONLL=list(zip(tokenized_text, index_entities))
-  CONLL_html=" ".join(CONLL_html)
   return CONLL_html
+
+
+@st.cache()
+def ner(sentence):
+  # make a sentence
+  sentence = Sentence(sentence)
+
+  # load the NER tagger
+  tagger = SequenceTagger.load("/content/PERS_final_model_24_01_2022.pt")
+  tagger.predict(sentence)
+
+  tagged_sent=WORD2HTML(sentence)
+
+  return " ".join(tagged_sent)
 
 
 #############
