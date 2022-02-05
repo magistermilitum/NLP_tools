@@ -76,6 +76,34 @@ def ner(sentence):
   return " ".join(tagged_sent)
 
 
+@st.cache()
+def parts_dis(sentence):
+  DIS_model = SequenceTagger.load('models/discours_parts_05_02_2022.pt')
+
+  DIS_sentence= Sentence(test)
+  DIS_model.predict(DIS_sentence)
+  
+  
+  tokenized_text=[str(token).split("Token: ")[1].split()[1] for token in DIS_sentence]
+  parts_discours=[]
+  for x in DIS_sentence.get_spans('ner'):
+
+    index=" ".join([(str(y).split("Token: ")[1]) for y in x]).split()[::2]#captura los index
+    index=[int(index[0])-1, int(index[-1])]
+    part=str(x).split("[− Labels: ")[1].replace("]", "")
+
+    parts_discours.append([part, " ".join(tokenized_text[index[0]:index[1]])])
+    
+  html="<table>"
+  for x in parts_discours:
+    html+="<tr>"
+    html+="<td>"+x[0]+"</td>"
+    html+="<td>"+x[1]+"</td>"
+    html+="</table"
+    
+  return html
+
+
 #############
 #PAGE SET UP
 #############
@@ -159,53 +187,18 @@ if nav == 'Summarize text':
                     st.write(ner(input_su), unsafe_allow_html=True)
                     st.caption("WHAT?")
                     st.success("Hola abuelita") 
-                    my_parser = PlaintextParser.from_string(input_su,Tokenizer('english'))
-                    lex_rank_summarizer = LexRankSummarizer()
-                    lexrank_summary = lex_rank_summarizer(my_parser.document,sentences_count=3)
-                    summa = ''
-                    for sentence in lexrank_summary:
-                            summa = summa + str(sentence)
-                    l_r = summa
-                    result_l_r = (str(len(l_r)) + ' characters' + ' ('"{:.0%}".format(len(l_r)/len(input_su)) + ' of original content)')
+                    
                     st.markdown('___')
                     st.write('LexRank Model')
-                    st.caption(result_l_r)
-                    st.success(l_r)
+                    st.caption("hola abulita 2")
+                    st.success("mamita)
                     text = input_su
-                    stopWords = set(stopwords.words("english"))
-                    words = word_tokenize(text)
-                    freqTable = dict()
-                    for word in words:
-                        word = word.lower()
-                        if word in stopWords:
-                            continue
-                        if word in freqTable:
-                            freqTable[word] += 1
-                        else:
-                            freqTable[word] = 1
-                    sentences = sent_tokenize(text)
-                    sentenceValue = dict()
-                    for sentence in sentences:
-                        for word, freq in freqTable.items():
-                            if word in sentence.lower():
-                                if sentence in sentenceValue:
-                                    sentenceValue[sentence] += freq
-                                else:
-                                    sentenceValue[sentence] = freq
-                    sumValues = 0
-                    for sentence in sentenceValue:
-                        sumValues += sentenceValue[sentence]  
-                    average = int(sumValues / len(sentenceValue))
-                    summary = ''
-                    for sentence in sentences:
-                        if (sentence in sentenceValue) and (sentenceValue[sentence] > (1.2 * average)):
-                            summary += " " + sentence
-                    s_m = summary
-                    result_s_m = (str(len(s_m)) + ' characters' + ' ('"{:.0%}".format(len(s_m)/len(input_su)) + ' of original content)')
+                    
+                    
                     st.markdown('___')
-                    st.write('Scoring Model')
-                    st.caption(result_s_m)
-                    st.success(s_m)
+                    st.write(parts_dis(input_su), unsafe_allow_html=True)
+                    st.caption("abuelita 3")
+                    st.success("mamita 2")
                     st.balloons()
 
     if source == 'I want to upload a file':
