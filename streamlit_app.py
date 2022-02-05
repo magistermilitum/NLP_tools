@@ -38,7 +38,10 @@ def load_model():
 
 tagger = load_model()
 
+def word2CONLL (sentence):
+  tokenized_text=[str(token).split("Token: ")[1].split()[1] for token in sentence]
 
+  return " ".join(tokenized_text)
 
 #############
 #PAGE SET UP
@@ -121,7 +124,7 @@ if nav == 'Summarize text':
                     tagged_lettre=Sentence(input_su)
                     tagger.predict(tagged_lettre)
                     
-                    t_r=(str(tagged_lettre))
+                    t_r=(word2CONLL(tagged_lettre))
                     st.markdown('___')
                     st.write('TextRank Model')
                     st.caption(t_r)
