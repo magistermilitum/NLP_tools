@@ -43,6 +43,29 @@ def word2CONLL (sentence):
 
   return " ".join(tokenized_text)
 
+
+@st.cache()
+def ner(sentence):
+	try:
+		# make a sentence
+		sentence = flair.data.Sentence(sentence)
+
+		# load the NER tagger
+		tagger = flair.models.SequenceTagger.load("models/PERS_final_model_24_01_2022.pt")
+
+		tagger.predict(sentence)
+
+		entities = []
+		# iterate over entities
+		for entity in sentence.get_spans('ner'):
+		    entities.append(entity)
+
+		return (sentence,entities)
+
+	except:
+		print("flair NER error")
+		return
+
 #############
 #PAGE SET UP
 #############
@@ -120,15 +143,12 @@ if nav == 'Summarize text':
             else:
                 with st.spinner('Processing...'):
                     time.sleep(2)
-                    
-                    tagged_lettre=Sentence(input_su)
-                    tagger.predict(tagged_lettre)
-                    
-                    t_r=(word2CONLL(tagged_lettre))
+  
+                    t_r=("cochino")
                     st.markdown('___')
-                    st.write(word2CONLL(tagged_lettre))
+                    st.write(ner(input_su)[1])
                     st.caption("WHAT?")
-                    st.success(word2CONLL(tagged_lettre)) 
+                    st.success("Hola abuelita") 
                     my_parser = PlaintextParser.from_string(input_su,Tokenizer('english'))
                     lex_rank_summarizer = LexRankSummarizer()
                     lexrank_summary = lex_rank_summarizer(my_parser.document,sentences_count=3)
