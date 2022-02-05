@@ -126,9 +126,9 @@ if nav == 'Summarize text':
                     
                     t_r=(word2CONLL(tagged_lettre))
                     st.markdown('___')
-                    st.write('TextRank Model')
-                    st.caption(t_r)
-                    st.success(t_r) 
+                    st.write(word2CONLL(tagged_lettre))
+                    st.caption("WHAT?")
+                    st.success("This is a success message") 
                     my_parser = PlaintextParser.from_string(input_su,Tokenizer('english'))
                     lex_rank_summarizer = LexRankSummarizer()
                     lexrank_summary = lex_rank_summarizer(my_parser.document,sentences_count=3)
