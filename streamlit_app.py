@@ -191,7 +191,7 @@ if nav == 'Summarize text':
                     st.markdown('___')
                     st.write('LexRank Model')
                     st.caption("hola abulita 2")
-                    st.success("mamita)
+                    st.success("mamita")
                     text = input_su
                     
                     
