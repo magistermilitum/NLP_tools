@@ -6,8 +6,15 @@
 ##########
 
 import streamlit as st
+
+st.set_page_config(page_title="SYNTHIA", 
+                   page_icon=":robot_face:",
+                   layout="wide",
+                   initial_sidebar_state="expanded"
+                   )
+
+
 import time
-from gensim.summarization import summarize
 from googletrans import Translator
 import nltk
 from nltk.tokenize import word_tokenize, sent_tokenize
@@ -24,20 +31,55 @@ from flair.data import Sentence
 from flair.models import SequenceTagger
 
 # loading the model
-#the Flair model is based on modern french texts, some inaccuracies when applying it on pre-classic french (1500-1650)
-tagger = SequenceTagger.load("flair/ner-french")
 
+
+def WORD2HTML(sentence):
+  CONLL_html=[str(token).split("Token: ")[1].split()[1] for token in sentence]
+  tokenized_text=[str(token).split("Token: ")[1].split()[1] for token in sentence]
+
+  index_entities=["O"]*len(tokenized_text)
+
+  dict_colors={"PERS": "255FD2", "ORG": "EE4220", "MISC":"19842E", "LOC":"7A1A7A"}
+
+
+  for entity in sentence.get_spans('ner'):
+    x=" ".join([(str(y).split("Token: ")[1]) for y in entity]).split()[::2]
+    x=[int(x[0])-1, int(x[-1])]
+
+    type_ent=str(entity).split("− Labels: ")[1].split()[0]
+    
+    if x[1]-x[0]>1: #if we are leading with a more one-unit entity. vg: Madame de Parme
+      index_entities[x[0]:x[1]]=["B-"+type_ent]+["I-"+type_ent]*(x[1]-x[0]-1)
+      if x[1]-x[0]>2:
+        CONLL_html[x[0]:x[1]]=['<span style="background-color: #'+dict_colors[type_ent]+'; padding:1px">'+CONLL_html[x[0]]]+[x for x in CONLL_html[x[0]+1:x[1]-1]]+[CONLL_html[x[1]-1]+'</span>']
+      else:
+        CONLL_html[x[0]:x[1]]=['<span style="background-color: #'+dict_colors[type_ent]+'; padding:1px">'+CONLL_html[x[0]]]+[CONLL_html[x[1]-1]+'</span>']
+    else: #single entities
+      index_entities[x[0]:x[1]]=["B-"+type_ent]*(x[1]-x[0])
+      CONLL_html[x[0]:x[1]]=['<span style="background-color: #'+dict_colors[type_ent]+'; padding:1px">'+CONLL_html[x[0]:x[1]][0]+'</span>']
+
+  CONLL=list(zip(tokenized_text, index_entities))
+  return CONLL_html
+
+
+@st.cache()
+def ner(sentence):
+  # make a sentence
+  sentence = Sentence(sentence)
+
+  # load the NER tagger
+  tagger = SequenceTagger.load("models/PERS_final_model_24_01_2022.pt")
+  tagger.predict(sentence)
+
+  tagged_sent=WORD2HTML(sentence)
+
+  return " ".join(tagged_sent)
 
 
 #############
 #PAGE SET UP
 #############
 
-st.set_page_config(page_title="SYNTHIA", 
-                   page_icon=":robot_face:",
-                   layout="wide",
-                   initial_sidebar_state="expanded"
-                   )
 
 def p_title(title):
     st.markdown(f'<h3 style="text-align: left; color:#F63366; font-size:28px;">{title}</h3>', unsafe_allow_html=True)
@@ -111,15 +153,12 @@ if nav == 'Summarize text':
             else:
                 with st.spinner('Processing...'):
                     time.sleep(2)
-                    t_r = summarize(input_su, word_count=50, ratio=0.05)
-                    tagged_lettre=Sentence(input_su)
-                    tagger.predict(tagged_lettre)
-                    #result_t_r = (str(len(t_r)) + ' characters' + ' ('"{:.0%}".format(len(t_r)/len(input_su)) + ' of original content)')
-                    result_t_r=str(tagged_lettre)
+  
+                    t_r=("cochino")
                     st.markdown('___')
-                    st.write('TextRank Model')
-                    st.caption(result_t_r)
-                    st.success(t_r) 
+                    st.write(ner(input_su), unsafe_allow_html=True)
+                    st.caption("WHAT?")
+                    st.success("Hola abuelita") 
                     my_parser = PlaintextParser.from_string(input_su,Tokenizer('english'))
                     lex_rank_summarizer = LexRankSummarizer()
                     lexrank_summary = lex_rank_summarizer(my_parser.document,sentences_count=3)
@@ -179,8 +218,10 @@ if nav == 'Summarize text':
                     if len(string_data) < 1000 or len(string_data) > 10000:
                         st.error('Please upload a file between 1,000 and 10,000 characters')
                     else:
-                        t_r = summarize(string_data, word_count=50, ratio=0.05)
-                        result_t_r = (str(len(t_r)) + ' characters' + ' ('"{:.0%}".format(len(t_r)/len(string_data)) + ' of original content)')
+                        tagged_lettre=Sentence(string_data)
+                        tagger.predict(tagged_lettre)
+                        
+                        result_t_r = (str(tagged_lettre))
                         st.markdown('___')
                         st.write('TextRank Model')
                         st.caption(result_t_r)
