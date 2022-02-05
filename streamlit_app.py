@@ -96,10 +96,12 @@ def parts_dis(sentence):
     
   html="<table>"
   for x in parts_discours:
+    #html+="<tr><th>Part of discourse</th"
     html+="<tr>"
     html+="<td>"+x[0]+"</td>"
     html+="<td>"+x[1]+"</td>"
-    html+="</table"
+    html+="</tr>"
+  html+="</table>"
     
   return html
 
