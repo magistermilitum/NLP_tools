@@ -68,7 +68,7 @@ def ner(sentence):
   sentence = Sentence(sentence)
 
   # load the NER tagger
-  tagger = SequenceTagger.load("models/PERS_final_model_24_01_2022.pt")
+  tagger = SequenceTagger.load("models/FLAT_model_31_01_2022.pt")
   tagger.predict(sentence)
 
   tagged_sent=WORD2HTML(sentence)
