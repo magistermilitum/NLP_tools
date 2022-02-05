@@ -60,7 +60,7 @@ def ner(sentence):
 		for entity in sentence.get_spans('ner'):
 		    entities.append(entity)
 
-		return (sentence,entities)
+		return entities
 
 	except:
 		print("flair NER error")
@@ -146,7 +146,7 @@ if nav == 'Summarize text':
   
                     t_r=("cochino")
                     st.markdown('___')
-                    st.write(ner(input_su)[1])
+                    st.write(ner(input_su))
                     st.caption("WHAT?")
                     st.success("Hola abuelita") 
                     my_parser = PlaintextParser.from_string(input_su,Tokenizer('english'))
