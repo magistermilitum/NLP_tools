@@ -176,7 +176,7 @@ if nav == 'Summarize text':
     if source == 'I want to input some text':
         input_su = st.text_area("Use the example below or input your own text in English (between 1,000 and 10,000 characters)", value=s_example, max_chars=10000, height=330)
         if st.button('Summarize'):
-            if len(input_su) < 1000:
+            if len(input_su) < 900:
                 st.error('Please enter a text in English of minimum 1,000 characters')
             else:
                 with st.spinner('Processing...'):
