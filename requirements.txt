@@ -8,4 +8,4 @@ tokenizers==0.10.3
 sumy==0.8.1
 textattack==0.3.0
 Flair==0.10
-kraken==3.0.4
+kraken==3.0.9
