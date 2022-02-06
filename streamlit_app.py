@@ -30,6 +30,23 @@ from textattack.augmentation import WordNetAugmenter
 from flair.data import Sentence
 from flair.models import SequenceTagger
 
+from kraken import pageseg
+from kraken import blla
+from kraken.lib import vgsl
+from kraken import rpred
+from kraken.lib import models
+import json
+import time
+import glob
+
+from PIL import Image
+
+from kraken import binarization
+
+import numpy as np
+import cv2
+import codecs
+
 # loading the model
 
 
@@ -104,6 +121,33 @@ def parts_dis(sentence):
   html+="</table>"
     
   return html
+
+
+
+@stcache
+def htr(image_name):
+  #Carga de la imagen
+  img = Image.open(image_name)
+
+  #Carga del modelod e segmentacion
+  model_path = 'models/blla.mlmodel'
+  model = vgsl.TorchVGSLModel.load_model(model_path)
+
+  #segmentación de la imagen
+  baseline_seg = blla.segment(img, model=model)
+  
+  #aplicación del modelo de reconocimiento
+  rec_model_path = 'models/model_36.mlmodel'
+  modelito = models.load_any(rec_model_path)
+  
+  pred_it = rpred.rpred(network=modelito, im=img, bounds=baseline_seg)
+  #obtención de las predicciones
+  pred_char=[]
+  for record in pred_it:
+    #print(record)
+    pred_char.append(record.prediction)
+    
+  return " ".join(pred_char)
 
 
 #############
@@ -202,73 +246,19 @@ if nav == 'Summarize text':
                     st.caption("abuelita 3")
                     st.success("mamita 2")
                     st.balloons()
+                    
 
     if source == 'I want to upload a file':
-        file = st.file_uploader('Upload your file here',type=['txt'])
+        file = st.file_uploader('Upload your file here',type=['jpg'])
         if file is not None:
             with st.spinner('Processing...'):
                     time.sleep(2)
-                    stringio = StringIO(file.getvalue().decode("utf-8"))
-                    string_data = stringio.read()
-                    if len(string_data) < 1000 or len(string_data) > 10000:
-                        st.error('Please upload a file between 1,000 and 10,000 characters')
-                    else:
-                        tagged_lettre=Sentence(string_data)
-                        tagger.predict(tagged_lettre)
-                        
-                        result_t_r = (str(tagged_lettre))
-                        st.markdown('___')
-                        st.write('TextRank Model')
-                        st.caption(result_t_r)
-                        st.success(t_r) 
-                        text = string_data
-                        stopWords = set(stopwords.words("english"))
-                        words = word_tokenize(text)
-                        freqTable = dict()
-                        for word in words:
-                            word = word.lower()
-                            if word in stopWords:
-                                continue
-                            if word in freqTable:
-                                freqTable[word] += 1
-                            else:
-                                freqTable[word] = 1
-                        sentences = sent_tokenize(text)
-                        sentenceValue = dict()
-                        for sentence in sentences:
-                            for word, freq in freqTable.items():
-                                if word in sentence.lower():
-                                    if sentence in sentenceValue:
-                                        sentenceValue[sentence] += freq
-                                    else:
-                                        sentenceValue[sentence] = freq
-                        sumValues = 0
-                        for sentence in sentenceValue:
-                            sumValues += sentenceValue[sentence]  
-                        average = int(sumValues / len(sentenceValue))
-                        summary = ''
-                        for sentence in sentences:
-                            if (sentence in sentenceValue) and (sentenceValue[sentence] > (1.3 * average)):
-                                summary += " " + sentence
-                        s_m = summary
-                        result_s_m = (str(len(s_m)) + ' characters' + ' ('"{:.0%}".format(len(s_m)/len(string_data)) + ' of original content)')
-                        st.markdown('___')
-                        st.write('Scoring Model')
-                        st.caption(result_s_m)
-                        st.success(s_m)
-                        my_parser = PlaintextParser.from_string(string_data,Tokenizer('english'))
-                        lex_rank_summarizer = LexRankSummarizer()
-                        lexrank_summary = lex_rank_summarizer(my_parser.document,sentences_count=3)
-                        summa = ''
-                        for sentence in lexrank_summary:
-                                summa = summa + str(sentence)
-                        l_r = summa
-                        result_l_r = (str(len(l_r)) + ' characters' + ' ('"{:.0%}".format(len(l_r)/len(string_data)) + ' of original content)')
-                        st.markdown('___')
-                        st.write('LexRank Model')
-                        st.caption(result_l_r)
-                        st.success(l_r)
-                        st.balloons()
+                    #image = file.getvalue()
+                    image = file.read()
+                    resultado=htr(image)
+                    st.write(resultado)
+                    st.success("mamita 3")
+                    
 
 #-----------------------------------------
 
