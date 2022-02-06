@@ -256,9 +256,8 @@ if nav == 'Summarize text':
         if file is not None:
             with st.spinner('Processing...'):
                     time.sleep(2)
-                    image = file.getvalue()
                     #image = file.read()
-                    resultado=transcript(read_image(image))
+                    resultado=transcript(read_image(file))
                     st.write(resultado)
                     st.success("mamita 3")
                     
