@@ -122,9 +122,36 @@ def parts_dis(sentence):
   return html
 
 
+@st.cache()
+def read_image(image_name):
+  img=Image.open(image_name)
+  #Carga del modelod e segmentacion
+  model_path = 'models/blla.mlmodel'
+  model = vgsl.TorchVGSLModel.load_model(model_path)
+  #segmentación de la imagen
+  baseline_seg = blla.segment(img, model=model)
+  print("final de segmentación")
+  
+  return img, baseline_seg
 
-
-
+@st.cache()
+def transcript(img, baseline_seg):
+  #aplicación del modelo de reconocimiento
+  rec_model_path = 'models/model_36.mlmodel'
+  modelito = models.load_any(rec_model_path)
+  
+  pred_it = rpred.rpred(network=modelito, im=img, bounds=baseline_seg)
+  #obtención de las predicciones
+  pred_char=[]
+  for record in pred_it:
+    #print(record)
+    pred_char.append(record.prediction)
+    
+  return " ".join(pred_char)
+  
+  
+  ret
+  
 
 #############
 #PAGE SET UP
@@ -231,7 +258,7 @@ if nav == 'Summarize text':
                     time.sleep(2)
                     image = file.getvalue()
                     #image = file.read()
-                    resultado=htr(image)
+                    resultado=transcript(read_image(image))
                     st.write(resultado)
                     st.success("mamita 3")
                     
