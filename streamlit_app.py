@@ -127,6 +127,7 @@ def parts_dis(sentence):
 def htr(image_name):
   #Carga de la imagen
   img = Image.open(image_name)
+  print("final de la carga")
 
   #Carga del modelod e segmentacion
   model_path = 'models/blla.mlmodel'
@@ -134,6 +135,7 @@ def htr(image_name):
 
   #segmentación de la imagen
   baseline_seg = blla.segment(img, model=model)
+  print("final de segmentación")
   
   #aplicación del modelo de reconocimiento
   rec_model_path = 'models/model_36.mlmodel'
