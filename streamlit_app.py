@@ -129,7 +129,6 @@ def read_image(image_name):
   return img
 
 
-@st.cache()
 def segmentation(image):
   model_path = 'models/blla.mlmodel'
   model = vgsl.TorchVGSLModel.load_model(model_path)
