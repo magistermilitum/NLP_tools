@@ -44,7 +44,6 @@ from PIL import Image
 from kraken import binarization
 
 import numpy as np
-import cv2
 import codecs
 
 # loading the model
