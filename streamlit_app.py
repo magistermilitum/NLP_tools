@@ -123,32 +123,7 @@ def parts_dis(sentence):
 
 
 
-@st.cache()
-def htr(image_name):
-  #Carga de la imagen
-  img = Image.open(image_name)
-  print("final de la carga")
 
-  #Carga del modelod e segmentacion
-  model_path = 'models/blla.mlmodel'
-  model = vgsl.TorchVGSLModel.load_model(model_path)
-
-  #segmentación de la imagen
-  baseline_seg = blla.segment(img, model=model)
-  print("final de segmentación")
-  
-  #aplicación del modelo de reconocimiento
-  rec_model_path = 'models/model_36.mlmodel'
-  modelito = models.load_any(rec_model_path)
-  
-  pred_it = rpred.rpred(network=modelito, im=img, bounds=baseline_seg)
-  #obtención de las predicciones
-  pred_char=[]
-  for record in pred_it:
-    #print(record)
-    pred_char.append(record.prediction)
-    
-  return " ".join(pred_char)
 
 
 #############
