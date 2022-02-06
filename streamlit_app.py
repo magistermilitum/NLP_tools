@@ -122,18 +122,23 @@ def parts_dis(sentence):
   return html
 
 
-@st.cache()
 def read_image(image_name):
   img=Image.open(image_name)
   #Carga del modelod e segmentacion
+  
+  return img
+
+@st.cache()
+def segmentation(image):
   model_path = 'models/blla.mlmodel'
   model = vgsl.TorchVGSLModel.load_model(model_path)
   #segmentación de la imagen
-  baseline_seg = blla.segment(img, model=model)
+  baseline_seg = blla.segment(image, model=model)
   print("final de segmentación")
   
-  return img, baseline_seg
-
+  return baseline_seg
+  
+  
 @st.cache()
 def transcript(img, baseline_seg):
   #aplicación del modelo de reconocimiento
@@ -257,7 +262,7 @@ if nav == 'Summarize text':
             with st.spinner('Processing...'):
                     time.sleep(2)
                     #image = file.read()
-                    resultado=transcript(read_image(file))
+                    resultado=transcript(read_image(file), segmentation(read_image(file)))
                     st.write(resultado)
                     st.success("mamita 3")
                     
