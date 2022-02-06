@@ -262,7 +262,7 @@ if nav == 'Summarize text':
                     #image = file.read()
                     #resultado=transcript(read_image(file), segmentation(read_image(file)))
                     st.image(read_image(file),width=250)
-                    st.write(read_image(file).size)
+                    st.write(segmentation(read_image(file)))
                     st.success("mamita 3")
                     
 
