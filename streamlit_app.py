@@ -260,7 +260,8 @@ if nav == 'Summarize text':
             with st.spinner('Processing...'):
                     time.sleep(2)
                     #image = file.read()
-                    resultado=transcript(read_image(file), segmentation(read_image(file)))
+                    #resultado=transcript(read_image(file), segmentation(read_image(file)))
+                    st.image(read_image(file),width=250)
                     st.write(resultado)
                     st.success("mamita 3")
                     
