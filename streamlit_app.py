@@ -123,7 +123,7 @@ def parts_dis(sentence):
 
 
 
-@stcache
+@st.cache()
 def htr(image_name):
   #Carga de la imagen
   img = Image.open(image_name)
