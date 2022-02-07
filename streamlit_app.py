@@ -38,6 +38,7 @@ from kraken.lib import models
 import json
 import time
 import glob
+import cv2
 
 from PIL import Image
 
@@ -123,7 +124,8 @@ def parts_dis(sentence):
 
 
 def read_image(image_name):
-  img=Image.open(image_name)
+  #img=Image.open(image_name)
+  img = cv2.imread(image_name)
   #Carga del modelod e segmentacion
   
   return img
