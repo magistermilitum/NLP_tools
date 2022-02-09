@@ -38,7 +38,6 @@ from kraken.lib import models
 import json
 import time
 import glob
-import cv2
 
 from PIL import Image
 
