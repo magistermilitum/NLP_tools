@@ -253,7 +253,7 @@ if nav == 'medieval charter analyze':
                     
                     
                     st.markdown('___')
-                    st.success(class_acta(input_su))
+                    st.success("Most probably type : "+class_acta(input_su))
                     text = input_su
                     
                     
