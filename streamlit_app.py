@@ -7,7 +7,7 @@
 
 import streamlit as st
 
-st.set_page_config(page_title="SYNTHIA", 
+st.set_page_config(page_title="Charter analyse", 
                    page_icon=":robot_face:",
                    layout="wide",
                    initial_sidebar_state="expanded"
@@ -168,8 +168,8 @@ def p_title(title):
 #SIDEBAR
 ########
 
-st.sidebar.header('SYNTHIA, I want to :crystal_ball:')
-nav = st.sidebar.radio('',['Go to homepage', 'Summarize text', 'Paraphrase text', 'Analyze text'])
+st.sidebar.header('Analyse medieval charter')
+nav = st.sidebar.radio('',['Go to homepage', 'Analyse text charter', 'Handrwritten text recognition', 'OCR enriching engine'])
 st.sidebar.write('')
 st.sidebar.write('')
 st.sidebar.write('')
@@ -190,7 +190,7 @@ expander.write("I'd love your feedback :smiley: Want to collaborate? Develop a p
 
 if nav == 'Go to homepage':
 
-    st.markdown("<h1 style='text-align: center; color: white; font-size:28px;'>Welcome to SYNTHIA!</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color: white; font-size:28px;'>Easy charter analyzer</h1>", unsafe_allow_html=True)
     st.markdown("<h3 style='text-align: center; font-size:56px;'<p>&#129302;</p></h3>", unsafe_allow_html=True)
     st.markdown("<h3 style='text-align: center; color: grey; font-size:20px;'>Summarize, paraphrase, analyze text & more. Try our models, browse their source code, and share with the world!</h3>", unsafe_allow_html=True)
     """
@@ -251,7 +251,7 @@ if nav == 'Summarize text':
                     st.write(parts_dis(input_su), unsafe_allow_html=True)
                     st.caption("abuelita 3")
                     st.success("mamita 2")
-                    st.balloons()
+              
                     
 
     if source == 'I want to upload a file':
