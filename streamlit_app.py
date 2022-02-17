@@ -164,7 +164,8 @@ def class_acta(sentence):
   sentence = Sentence(sentence)
   class_model.predict(sentence)
   # print sentence with predicted labels
-  print('document above is: ', sentence.labels)
+  #print('document above is: ', sentence.labels)
+  return sentence.labels[0]
   
 
 #############
