@@ -165,7 +165,7 @@ def class_acta(sentence):
   class_model.predict(sentence)
   # print sentence with predicted labels
   #print('document above is: ', sentence.labels)
-  return sentence.labels[0]
+  return "Most probably type : "+str(sentence.labels[0])
   
 
 #############
@@ -253,7 +253,7 @@ if nav == 'medieval charter analyze':
                     
                     
                     st.markdown('___')
-                    st.success("Most probably type : ", class_acta(input_su))
+                    st.success(class_acta(input_su))
                     text = input_su
                     
                     
