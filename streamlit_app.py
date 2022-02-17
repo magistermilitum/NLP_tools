@@ -253,17 +253,15 @@ if nav == 'medieval charter analyze':
                     st.success("Hola abuelita") 
                     
                     st.markdown('___')
-                    st.write('LexRank Model')
-                    st.caption("hola abulita 2")
-                    st.success("mamita")
+                    st.success(class_acta(input_su))
                     text = input_su
-                    st.write(class_acta(input_su))
+                    
                     
                     
                     st.markdown('___')
+                    st.write('Diplomatics parts')
                     st.write(parts_dis(input_su), unsafe_allow_html=True)
-                    st.caption("abuelita 3")
-                    st.success("mamita 2")
+                    
               
                     
 
