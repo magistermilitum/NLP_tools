@@ -7,7 +7,7 @@
 
 import streamlit as st
 
-st.set_page_config(page_title="Charter analyse", 
+st.set_page_config(page_title="Charter analyze", 
                    page_icon=":robot_face:",
                    layout="wide",
                    initial_sidebar_state="expanded"
@@ -169,7 +169,7 @@ def p_title(title):
 ########
 
 st.sidebar.header('Analyze medieval charter')
-nav = st.sidebar.radio('',['Go to homepage', 'Analyse text charter', 'Handrwritten text recognition', 'OCR enriching engine'])
+nav = st.sidebar.radio('',['Go to homepage', 'Analyze text charter', 'Handrwritten text recognition', 'OCR enriching engine'])
 st.sidebar.write('')
 st.sidebar.write('')
 st.sidebar.write('')
