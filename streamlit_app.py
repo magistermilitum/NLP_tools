@@ -29,6 +29,7 @@ from textattack.augmentation import EmbeddingAugmenter
 from textattack.augmentation import WordNetAugmenter
 from flair.data import Sentence
 from flair.models import SequenceTagger
+from flair.models import TextClassifier
 
 from kraken import pageseg
 from kraken import blla
@@ -154,6 +155,16 @@ def transcript(img, baseline_seg):
     pred_char.append(record.prediction)
     
   return " ".join(pred_char)
+
+
+@st.cache()
+def class_acta(sentence):
+  class_model = TextClassifier.load('models/charters_class_05_02_2022.pt')
+  
+  sentence = Sentence(sentence)
+  class_model.predict(sentence)
+  # print sentence with predicted labels
+  print('document above is: ', sentence.labels)
   
 
 #############
@@ -245,6 +256,7 @@ if nav == 'medieval charter analyze':
                     st.caption("hola abulita 2")
                     st.success("mamita")
                     text = input_su
+                    st.write(class_acta(input_su))
                     
                     
                     st.markdown('___')
