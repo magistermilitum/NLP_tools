@@ -248,9 +248,9 @@ if nav == 'medieval charter analyze':
   
                     t_r=("cochino")
                     st.markdown('___')
+                    st.write("Named entities in Flat mode")
                     st.write(ner(input_su), unsafe_allow_html=True)
-                    st.caption("WHAT?")
-                    st.success("Hola abuelita") 
+                    
                     
                     st.markdown('___')
                     st.success(class_acta(input_su))
