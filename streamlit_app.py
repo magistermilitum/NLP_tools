@@ -7,7 +7,7 @@
 
 import streamlit as st
 
-st.set_page_config(page_title="Charter analyze", 
+st.set_page_config(page_title="medieval charter analyze", 
                    page_icon=":robot_face:",
                    layout="wide",
                    initial_sidebar_state="expanded"
@@ -169,7 +169,7 @@ def p_title(title):
 ########
 
 st.sidebar.header('Analyze medieval charter')
-nav = st.sidebar.radio('',['Go to homepage', 'Analyze text charter', 'Handrwritten text recognition', 'OCR enriching engine'])
+nav = st.sidebar.radio('',['Go to homepage', 'medieval charter analyze', 'Handrwritten text recognition', 'OCR enriching engine'])
 st.sidebar.write('')
 st.sidebar.write('')
 st.sidebar.write('')
@@ -213,7 +213,7 @@ if nav == 'Go to homepage':
 #SUMMARIZE
 ##########
 
-if nav == 'Analyze medieval charter':    
+if nav == 'medieval charter analyze':    
     st.markdown("<h4 style='text-align: center; color:grey;'>Accelerate knowledge with SYNTHIA &#129302;</h4>", unsafe_allow_html=True)
     st.text('')
     p_title('Summarize')
@@ -227,7 +227,7 @@ if nav == 'Analyze medieval charter':
 
     if source == 'I want to input some text':
         input_su = st.text_area("Use the example below or input your own text in English (between 1,000 and 10,000 characters)", value=s_example, max_chars=10000, height=330)
-        if st.button('Summarize'):
+        if st.button('medieval charter analyze'):
             if len(input_su) < 700:
                 st.error('Please enter a text in English of minimum 1,000 characters')
             else:
