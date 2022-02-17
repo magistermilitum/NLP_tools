@@ -168,7 +168,7 @@ def p_title(title):
 #SIDEBAR
 ########
 
-st.sidebar.header('Analyse medieval charter')
+st.sidebar.header('Analyze medieval charter')
 nav = st.sidebar.radio('',['Go to homepage', 'Analyse text charter', 'Handrwritten text recognition', 'OCR enriching engine'])
 st.sidebar.write('')
 st.sidebar.write('')
@@ -213,7 +213,7 @@ if nav == 'Go to homepage':
 #SUMMARIZE
 ##########
 
-if nav == 'Summarize text':    
+if nav == 'Analyze medieval charter':    
     st.markdown("<h4 style='text-align: center; color:grey;'>Accelerate knowledge with SYNTHIA &#129302;</h4>", unsafe_allow_html=True)
     st.text('')
     p_title('Summarize')
@@ -223,12 +223,12 @@ if nav == 'Summarize text':
                           ("I want to input some text", "I want to upload a file"))
     st.text('')
     
-    s_example = "Artificial intelligence (AI) is intelligence demonstrated by machines, as opposed to the natural intelligence displayed by humans or animals. Leading AI textbooks define the field as the study of 'intelligent agents': any system that perceives its environment and takes actions that maximize its chance of achieving its goals. Some popular accounts use the term 'artificial intelligence' to describe machines that mimic cognitive functions that humans associate with the human mind, such as learning and problem solving, however this definition is rejected by major AI researchers. AI applications include advanced web search engines, recommendation systems (used by YouTube, Amazon and Netflix), understanding human speech (such as Siri or Alexa), self-driving cars (such as Tesla), and competing at the highest level in strategic game systems (such as chess and Go). As machines become increasingly capable, tasks considered to require intelligence are often removed from the definition of AI, a phenomenon known as the AI effect. For instance, optical character recognition is frequently excluded from things considered to be AI, having become a routine technology."
+    s_example = "In nomine Sancte et individue Trinitatis , ego Henricus , divina miseratione Belvacensis episcopus , tam futuris quam presentibus imperpetuum . Milites Templi Iherosolimitani cum districte Deo tam periculosissime proximo serviunt , qui proprii sanguinis vilitate concepta telis se objiciunt paganorum et pro ecclesia defendanda lucem istam contempnere animasque suas ponere non reformidant et implentes eam qua majorem Dominus esse negat in hominibus caritatem . Quo ergo sanctius et utilius operantur et ad militandum plura eis necessaria sunt , eo diligencius a fidelibus decet eis stipendia provideri et super hoc ex officio nostro eos resque eorum tueri debemus et que ipsis pie ac racionabiliter collata fuerint a nobis vel ab aliis , ut fixa et inconvulsa rataque eis permaneant satagere . Quocirca annuales prebendarum Beate Marie de Monchiaco in manus Sansonis , venerabilis Remensis archiepiscopi et nostras , redditus , assensu et concessione Drogonis de Petrafonte , qui Monchiaco ##10 #11 preerat et Nevelonis , filii sui , et de manu nostra a predictis fratribus susceptos eisdem in perpetuum possidendos confirmamus presentemque paginam , ne quis contradicat , sigilli nostri impressione communimus , ut quomodocumque quelibet earum prebendarum vacaverit vel qualicumque pacto de persona ad personam transierit , unius anni beneficium integrum , quotiens hoc acciderit , fratres Templi accipiant et , tam pro nobis quam pro canonicis vivis aut mortuis attencius orent . Nulla ergo persona huic pie constitutioni contradicere presumat et , si quis hoc attemptaverit , offensam Dei timeat . Testes quoque idonei adhibiti sunt quo id firmius perseveret . S . Bauduini , Noviomensis episcopi . S . Ivonis , Suessionensis comitis . "
 
     if source == 'I want to input some text':
         input_su = st.text_area("Use the example below or input your own text in English (between 1,000 and 10,000 characters)", value=s_example, max_chars=10000, height=330)
         if st.button('Summarize'):
-            if len(input_su) < 900:
+            if len(input_su) < 700:
                 st.error('Please enter a text in English of minimum 1,000 characters')
             else:
                 with st.spinner('Processing...'):
