@@ -98,9 +98,11 @@ def parts_dis(sentence):
   DIS_model = SequenceTagger.load('models/discours_parts_05_02_2022.pt')
 
   DIS_sentence= Sentence(sentence)
+  entidades=WORD2HTML(DIS_sentence)
+  
   DIS_model.predict(DIS_sentence)
   
-  entidades=WORD2HTML(sentence)
+  
   
   
   tokenized_text=[str(token).split("Token: ")[1].split()[1] for token in DIS_sentence]
