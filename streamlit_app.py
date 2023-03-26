@@ -46,7 +46,7 @@ from kraken import binarization
 
 import numpy as np
 import codecs
-from keras.preprocessing import image
+import cv2
 
 # loading the model
 
@@ -134,12 +134,7 @@ def parts_dis(sentence):
 
 def read_image(image_name):
   #img=Image.open(image_name)
-  img = image.load_img(image_name)
-  img = image.img_to_array(img)
- 
-
-
-  #img = Image.open(image_name)
+  img = cv2.imread(image_name)
   #Carga del modelod e segmentacion
   
   return img
