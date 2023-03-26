@@ -100,6 +100,8 @@ def parts_dis(sentence):
   DIS_sentence= Sentence(sentence)
   DIS_model.predict(DIS_sentence)
   
+  entidades=WORD2HTML(sentence)
+  
   
   tokenized_text=[str(token).split("Token: ")[1].split()[1] for token in DIS_sentence]
   parts_discours=[]
@@ -109,7 +111,7 @@ def parts_dis(sentence):
     index=[int(index[0])-1, int(index[-1])]
     part=str(x).split("[− Labels: ")[1].replace("]", "")
 
-    parts_discours.append([part, " ".join(tokenized_text[index[0]:index[1]])])
+    parts_discours.append([part, " ".join(entidades[index[0]:index[1]])])
     
   html="<table>"
   for x in parts_discours:
