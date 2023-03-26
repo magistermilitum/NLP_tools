@@ -49,7 +49,7 @@ import codecs
 
 # loading the model
 
-
+@st.cache()
 def WORD2HTML(sentence):
   CONLL_html=[str(token).split("Token: ")[1].split()[1] for token in sentence]
   tokenized_text=[str(token).split("Token: ")[1].split()[1] for token in sentence]
@@ -130,7 +130,7 @@ def parts_dis(sentence):
     
   return html
 
-
+@st.cache()
 def read_image(image_name):
   #img=Image.open(image_name)
   #img = cv2.imread(image_name)
@@ -139,7 +139,7 @@ def read_image(image_name):
   
   return img
 
-
+@st.cache()
 def segmentation(image):
   model_path = 'models/blla.mlmodel'
   model = vgsl.TorchVGSLModel.load_model(model_path)
