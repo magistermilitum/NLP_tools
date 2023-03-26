@@ -281,7 +281,8 @@ if nav == 'medieval charter analyze':
                     #image = file.read()
                     #resultado=transcript(read_image(file), segmentation(read_image(file)))
                     st.image(read_image(file),width=250)
-                    st.write(segmentation(read_image(file)))
+                    #st.write(segmentation(read_image(file)))
+                    st.write(transcript(read_image(file), segmentation(read_image(file))))
                     st.success("mamita 3")
                     
 
