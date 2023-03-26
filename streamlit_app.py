@@ -133,7 +133,7 @@ def parts_dis(sentence):
 
 def read_image(image_name):
   #img=Image.open(image_name)
-  img = cv2.imread(image_name)
+  img = Image.open(image_name)
   #Carga del modelod e segmentacion
   
   return img
