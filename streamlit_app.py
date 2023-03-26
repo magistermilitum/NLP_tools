@@ -161,7 +161,7 @@ def transcript(img, baseline_seg):
   pred_char=[]
   for i, record in enumerate(pred_it):
     #print(record)
-    pred_char.append(f"Lin. {str(i+1)} : {record.prediction}\n")
+    pred_char.append(f"Lin. {str(i+1)} : {record.prediction}<br>")
     
   return " ".join(pred_char)
 
