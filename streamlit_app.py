@@ -68,7 +68,7 @@ def WORD2HTML(sentence):
     if x[1]-x[0]>1: #if we are leading with a more one-unit entity. vg: Madame de Parme
       index_entities[x[0]:x[1]]=["B-"+type_ent]+["I-"+type_ent]*(x[1]-x[0]-1)
       if x[1]-x[0]>2:
-        CONLL_html[x[0]:x[1]]=['<span style="background-color: #'+dict_colors[type_ent]+'; padding:1px">'+CONLL_html[x[0]]+"FEO"]+[x for x in CONLL_html[x[0]+1:x[1]-1]]+[CONLL_html[x[1]-1]+'</span>']
+        CONLL_html[x[0]:x[1]]=['<span style="background-color: #'+dict_colors[type_ent]+'; padding:1px">'+CONLL_html[x[0]]]+[x for x in CONLL_html[x[0]+1:x[1]-1]]+[CONLL_html[x[1]-1]+'</span>']
       else:
         CONLL_html[x[0]:x[1]]=['<span style="background-color: #'+dict_colors[type_ent]+'; padding:1px">'+CONLL_html[x[0]]]+[CONLL_html[x[1]-1]+'</span>']
     else: #single entities
@@ -96,11 +96,14 @@ def ner(sentence):
 @st.cache()
 def parts_dis(sentence):
   DIS_model = SequenceTagger.load('models/discours_parts_05_02_2022.pt')
-
   DIS_sentence= Sentence(sentence)
-  entidades=WORD2HTML(DIS_sentence)
-  
   DIS_model.predict(DIS_sentence)
+  
+  # load the NER tagger
+  tagger = SequenceTagger.load("models/FLAT_model_31_01_2022.pt")
+  tagger.predict(sentence)
+
+  tagged_sent=WORD2HTML(sentence)
   
   
   
@@ -113,7 +116,7 @@ def parts_dis(sentence):
     index=[int(index[0])-1, int(index[-1])]
     part=str(x).split("[− Labels: ")[1].replace("]", "")
 
-    parts_discours.append([part, " ".join(entidades[index[0]:index[1]])])
+    parts_discours.append([part, " ".join(tagged_sent[index[0]:index[1]])])
     
   html="<table>"
   for x in parts_discours:
