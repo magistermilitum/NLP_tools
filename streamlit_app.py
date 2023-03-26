@@ -101,9 +101,10 @@ def parts_dis(sentence):
   
   # load the NER tagger
   tagger = SequenceTagger.load("models/FLAT_model_31_01_2022.pt")
-  tagger.predict(sentence)
+  NER_sentence = Sentence(sentence)
+  tagger.predict(NER_sentence)
 
-  tagged_sent=WORD2HTML(sentence)
+  tagged_sent=WORD2HTML(NER_sentence)
   
   
   
