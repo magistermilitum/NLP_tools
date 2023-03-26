@@ -159,9 +159,9 @@ def transcript(img, baseline_seg):
   pred_it = rpred.rpred(network=modelito, im=img, bounds=baseline_seg)
   #obtención de las predicciones
   pred_char=[]
-  for record in pred_it:
+  for i, record in enumerate(pred_it):
     #print(record)
-    pred_char.append(record.prediction)
+    pred_char.append(f"Lin. {str(i+1)} : {record.prediction}")
     
   return " ".join(pred_char)
 
