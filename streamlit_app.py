@@ -100,7 +100,7 @@ def parts_dis(sentence):
   DIS_model.predict(DIS_sentence)
   
   # load the NER tagger
-  tagger = SequenceTagger.load("models/models/best-model_flat_13_03_2022.pt")
+  tagger = SequenceTagger.load("models/best-model_flat_13_03_2022.pt")
   NER_sentence = Sentence(sentence)
   tagger.predict(NER_sentence)
 
