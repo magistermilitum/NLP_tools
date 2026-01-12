@@ -1,200 +1,377 @@
 # streamlit_app.py
-import time
-import json
-import glob
-from io import StringIO
+# SYNTHIA (modernized Streamlit + fixed Flair token/span handling)
 
-import streamlit as st
+from __future__ import annotations
+
+import json
+import time
+from io import BytesIO, StringIO
+from pathlib import Path
+from typing import List, Optional, Tuple
+
 import numpy as np
+import streamlit as st
 from PIL import Image
 
-from flair.data import Sentence
-from flair.models import SequenceTagger, TextClassifier
+# --- Optional / heavy deps (loaded lazily in cached loaders) ---
+# flair, kraken, nltk, etc. are imported in the functions that need them.
 
-from kraken import blla, rpred
-from kraken.lib import vgsl, models as kraken_models
 
-# -------------------------
-# Streamlit config (arriba)
-# -------------------------
+APP_TITLE = "medieval charter analyze"
+MODELS_DIR = Path("models")
+
+
+# ======================================================================================
+# Streamlit config
+# ======================================================================================
 st.set_page_config(
-    page_title="medieval charter analyze",
+    page_title=APP_TITLE,
     page_icon="🤖",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# -------------------------
-# Caching: recursos (modelos)
-# -------------------------
-@st.cache_resource
+
+# ======================================================================================
+# Cached resource loaders (models)
+# ======================================================================================
+@st.cache_resource(show_spinner=False)
 def load_ner_tagger():
-    return SequenceTagger.load("models/best-model_flat_13_03_2022.pt")
+    from flair.models import SequenceTagger
 
-@st.cache_resource
+    model_path = MODELS_DIR / "best-model_flat_13_03_2022.pt"
+    if not model_path.exists():
+        raise FileNotFoundError(f"NER model not found: {model_path.resolve()}")
+    return SequenceTagger.load(str(model_path))
+
+
+@st.cache_resource(show_spinner=False)
 def load_discourse_tagger():
-    return SequenceTagger.load("models/discours_parts_05_02_2022.pt")
+    from flair.models import SequenceTagger
 
-@st.cache_resource
+    model_path = MODELS_DIR / "discours_parts_05_02_2022.pt"
+    if not model_path.exists():
+        raise FileNotFoundError(f"Discourse model not found: {model_path.resolve()}")
+    return SequenceTagger.load(str(model_path))
+
+
+@st.cache_resource(show_spinner=False)
 def load_charter_classifier():
-    return TextClassifier.load("models/charters_class_05_02_2022.pt")
+    from flair.models import TextClassifier
 
-@st.cache_resource
-def load_kraken_seg_model():
-    # OJO: en Kraken, .mlmodel aquí parece ser un modelo VGSL; mantengo tu ruta
-    model_path = "models/blla.mlmodel"
-    return vgsl.TorchVGSLModel.load_model(model_path)
+    model_path = MODELS_DIR / "charters_class_05_02_2022.pt"
+    if not model_path.exists():
+        raise FileNotFoundError(f"Classifier model not found: {model_path.resolve()}")
+    return TextClassifier.load(str(model_path))
 
-@st.cache_resource
-def load_kraken_rec_model():
-    rec_model_path = "models/model_36.mlmodel"
-    return kraken_models.load_any(rec_model_path)
 
-# -------------------------
-# Caching: datos (procesos)
-# -------------------------
-@st.cache_data
-def read_image_bytes(file_bytes: bytes) -> Image.Image:
-    return Image.open(StringIO(file_bytes.decode("latin-1")))  # NO recomendado
+@st.cache_resource(show_spinner=False)
+def load_kraken_segmentation_model():
+    # blla segmentation model (VGSL Torch model)
+    from kraken.lib import vgsl
 
-# Mejor: bytes -> Image sin hacks
-@st.cache_data
-def read_image_upload(uploaded_file) -> Image.Image:
-    return Image.open(uploaded_file)
+    model_path = MODELS_DIR / "blla.mlmodel"
+    if not model_path.exists():
+        raise FileNotFoundError(f"Kraken segmentation model not found: {model_path.resolve()}")
+    return vgsl.TorchVGSLModel.load_model(str(model_path))
 
-def WORD2HTML(sentence: Sentence):
-    # Nota: tu parsing via str(token) es frágil, pero lo dejo igual para no romperte outputs
-    CONLL_html = [str(token).split("Token: ")[1].split()[1] for token in sentence]
-    tokenized_text = [str(token).split("Token: ")[1].split()[1] for token in sentence]
 
-    index_entities = ["O"] * len(tokenized_text)
+@st.cache_resource(show_spinner=False)
+def load_kraken_recognition_model():
+    from kraken.lib import models
+
+    model_path = MODELS_DIR / "model_36.mlmodel"
+    if not model_path.exists():
+        raise FileNotFoundError(f"Kraken recognition model not found: {model_path.resolve()}")
+    return models.load_any(str(model_path))
+
+
+# ======================================================================================
+# Flair helpers (FIXED: no parsing of str(token))
+# ======================================================================================
+def _span_label(span, label_type: str = "ner") -> str:
+    # Flair modern: span.get_label(label_type).value
+    try:
+        return span.get_label(label_type).value
+    except Exception:
+        # fallback
+        if getattr(span, "labels", None):
+            return span.labels[0].value
+        return "MISC"
+
+
+@st.cache_data(show_spinner=False)
+def word2html(sentence_text: str, label_type: str = "ner") -> List[str]:
+    """
+    Returns token list with <span ...> wrappers for Flair spans.
+    Robust to Flair version changes.
+    """
+    from flair.data import Sentence
+
+    sent = Sentence(sentence_text)
+    tagger = load_ner_tagger() if label_type == "ner" else None
+    if tagger is None:
+        # If someone calls with another label_type, they should predict outside.
+        # Kept for compatibility.
+        pass
+    else:
+        tagger.predict(sent)
+
+    tokens = [t.text for t in sent]
+    html_tokens = tokens.copy()
+
     dict_colors = {"PERS": "255FD2", "ORG": "EE4220", "MISC": "19842E", "LOC": "7A1A7A"}
 
-    for entity in sentence.get_spans("ner"):
-        x = " ".join([(str(y).split("Token: ")[1]) for y in entity]).split()[::2]
-        x = [int(x[0]) - 1, int(x[-1])]
+    for span in sent.get_spans(label_type):
+        label = _span_label(span, label_type)
+        color = dict_colors.get(label, "FFD54F")  # default if unknown label
 
-        type_ent = str(entity).split("− Labels: ")[1].split()[0]
+        # token.idx starts at 1 in Flair
+        start = span.tokens[0].idx - 1
+        end_excl = span.tokens[-1].idx  # exclusive
 
-        if x[1] - x[0] > 1:
-            index_entities[x[0]:x[1]] = ["B-" + type_ent] + ["I-" + type_ent] * (x[1] - x[0] - 1)
-            if x[1] - x[0] > 2:
-                CONLL_html[x[0]:x[1]] = (
-                    [f'<span style="background-color: #{dict_colors[type_ent]}; padding:1px">{CONLL_html[x[0]]}']
-                    + [w for w in CONLL_html[x[0] + 1 : x[1] - 1]]
-                    + [CONLL_html[x[1] - 1] + "</span>"]
-                )
-            else:
-                CONLL_html[x[0]:x[1]] = [
-                    f'<span style="background-color: #{dict_colors[type_ent]}; padding:1px">{CONLL_html[x[0]]}',
-                    CONLL_html[x[1] - 1] + "</span>",
-                ]
-        else:
-            index_entities[x[0]:x[1]] = ["B-" + type_ent] * (x[1] - x[0])
-            CONLL_html[x[0]:x[1]] = [
-                f'<span style="background-color: #{dict_colors[type_ent]}; padding:1px">{CONLL_html[x[0]:x[1]][0]}</span>'
-            ]
+        if 0 <= start < len(html_tokens):
+            html_tokens[start] = (
+                f'<span style="background-color: #{color}; padding:1px">{html_tokens[start]}'
+            )
+        if 0 <= end_excl - 1 < len(html_tokens):
+            html_tokens[end_excl - 1] = f"{html_tokens[end_excl - 1]}</span>"
 
-    return CONLL_html
+    return html_tokens
 
-@st.cache_data
+
+@st.cache_data(show_spinner=False)
 def ner_html(text: str) -> str:
+    """
+    Named Entities HTML using your Flair NER tagger.
+    """
+    from flair.data import Sentence
+
     sent = Sentence(text)
     tagger = load_ner_tagger()
     tagger.predict(sent)
-    return " ".join(WORD2HTML(sent))
 
-@st.cache_data
+    tokens = [t.text for t in sent]
+    html_tokens = tokens.copy()
+
+    dict_colors = {"PERS": "255FD2", "ORG": "EE4220", "MISC": "19842E", "LOC": "7A1A7A"}
+
+    for span in sent.get_spans("ner"):
+        label = _span_label(span, "ner")
+        color = dict_colors.get(label, "FFD54F")
+
+        start = span.tokens[0].idx - 1
+        end_excl = span.tokens[-1].idx
+
+        if 0 <= start < len(html_tokens):
+            html_tokens[start] = (
+                f'<span style="background-color: #{color}; padding:1px">{html_tokens[start]}'
+            )
+        if 0 <= end_excl - 1 < len(html_tokens):
+            html_tokens[end_excl - 1] = f"{html_tokens[end_excl - 1]}</span>"
+
+    return " ".join(html_tokens)
+
+
+@st.cache_data(show_spinner=False)
 def parts_dis_html(text: str) -> str:
+    """
+    Diplomatic parts (your discourse tagger) + NER highlight inside each part.
+    FIXED: uses span.tokens and span.get_label, no string parsing.
+    """
+    from flair.data import Sentence
+
+    # predict discourse parts
     dis_model = load_discourse_tagger()
     dis_sent = Sentence(text)
     dis_model.predict(dis_sent)
 
+    # predict NER once, then reuse token-level HTML slices
     ner_tagger = load_ner_tagger()
     ner_sent = Sentence(text)
     ner_tagger.predict(ner_sent)
-    tagged_sent = WORD2HTML(ner_sent)
 
-    tokenized_text = [str(token).split("Token: ")[1].split()[1] for token in dis_sent]
-    parts_discours = []
+    ner_tokens = [t.text for t in ner_sent]
+    ner_html_tokens = ner_tokens.copy()
 
-    for x in dis_sent.get_spans("ner"):
-        idx = " ".join([(str(y).split("Token: ")[1]) for y in x]).split()[::2]
-        idx = [int(idx[0]) - 1, int(idx[-1])]
-        part = str(x).split("[− Labels: ")[1].replace("]", "")
-        parts_discours.append([part, " ".join(tagged_sent[idx[0]:idx[1]])])
+    dict_colors = {"PERS": "255FD2", "ORG": "EE4220", "MISC": "19842E", "LOC": "7A1A7A"}
+
+    for span in ner_sent.get_spans("ner"):
+        label = _span_label(span, "ner")
+        color = dict_colors.get(label, "FFD54F")
+
+        start = span.tokens[0].idx - 1
+        end_excl = span.tokens[-1].idx
+
+        if 0 <= start < len(ner_html_tokens):
+            ner_html_tokens[start] = (
+                f'<span style="background-color: #{color}; padding:1px">{ner_html_tokens[start]}'
+            )
+        if 0 <= end_excl - 1 < len(ner_html_tokens):
+            ner_html_tokens[end_excl - 1] = f"{ner_html_tokens[end_excl - 1]}</span>"
+
+    parts_rows: List[Tuple[str, str]] = []
+    # IMPORTANT: your discourse tagger stores spans under 'ner' (as in your legacy code).
+    # If your discourse model uses a different label type, change "ner" below accordingly.
+    for sp in dis_sent.get_spans("ner"):
+        part = _span_label(sp, "ner")
+        start = sp.tokens[0].idx - 1
+        end_excl = sp.tokens[-1].idx
+        frag = " ".join(ner_html_tokens[start:end_excl]) if 0 <= start < end_excl else ""
+        parts_rows.append((part, frag))
 
     html = "<table>"
-    for p, frag in parts_discours:
-        html += f"<tr><td>{p}</td><td>{frag}</td></tr>"
+    for part, frag in parts_rows:
+        html += f"<tr><td>{part}</td><td>{frag}</td></tr>"
     html += "</table>"
     return html
 
-@st.cache_data
-def classify_charter(text: str) -> str:
+
+@st.cache_data(show_spinner=False)
+def class_acta(text: str) -> str:
+    from flair.data import Sentence
+
     clf = load_charter_classifier()
     sent = Sentence(text)
     clf.predict(sent)
-    return f"Most probably type : {sent.labels[0]}"
+    if not sent.labels:
+        return "Most probably type: (no label)"
+    return f"Most probably type: {sent.labels[0]}"
 
-@st.cache_data
-def kraken_segment(img: Image.Image):
-    seg_model = load_kraken_seg_model()
-    return blla.segment(img, model=seg_model)
 
-@st.cache_data
-def kraken_transcribe(img: Image.Image, baseline_seg):
-    rec_model = load_kraken_rec_model()
+# ======================================================================================
+# Kraken helpers
+# ======================================================================================
+@st.cache_data(show_spinner=False)
+def read_image(upload_or_path) -> Image.Image:
+    """
+    Accepts a Streamlit UploadedFile or a path/bytes, returns PIL Image.
+    """
+    if hasattr(upload_or_path, "getvalue"):
+        data = upload_or_path.getvalue()
+        return Image.open(BytesIO(data)).convert("RGB")
+    if isinstance(upload_or_path, (bytes, bytearray)):
+        return Image.open(BytesIO(upload_or_path)).convert("RGB")
+    return Image.open(upload_or_path).convert("RGB")
+
+
+@st.cache_data(show_spinner=False)
+def segmentation(img: Image.Image):
+    from kraken import blla
+
+    model = load_kraken_segmentation_model()
+    baseline_seg = blla.segment(img, model=model)
+    return baseline_seg
+
+
+@st.cache_data(show_spinner=False)
+def transcript(img: Image.Image, baseline_seg) -> str:
+    from kraken import rpred
+
+    rec_model = load_kraken_recognition_model()
     pred_it = rpred.rpred(network=rec_model, im=img, bounds=baseline_seg)
-    pred_char = [f"Lin. {i+1} : {record.prediction}<br>" for i, record in enumerate(pred_it)]
-    return " ".join(pred_char)
 
-# -------------------------
+    lines = []
+    for i, record in enumerate(pred_it):
+        lines.append(f"Lin. {i+1} : {record.prediction}<br>")
+    return " ".join(lines)
+
+
+# ======================================================================================
 # UI helpers
-# -------------------------
+# ======================================================================================
 def p_title(title: str):
     st.markdown(
         f'<h3 style="text-align:left; color:#F63366; font-size:28px;">{title}</h3>',
         unsafe_allow_html=True,
     )
 
-# -------------------------
-# Sidebar / Navigation
-# (Arreglo: tus if nav == 'Paraphrase text' nunca corrían porque no estaba en el radio)
-# -------------------------
+
+# ======================================================================================
+# Sidebar
+# ======================================================================================
 st.sidebar.header("Analyze medieval charter")
+
 nav = st.sidebar.radio(
     "",
     [
         "Go to homepage",
         "medieval charter analyze",
+        "Handwritten text recognition",
         "Paraphrase text",
         "Analyze text",
-        "Handwritten text recognition",
-        "OCR enriching engine",
     ],
 )
 
-# -------------------------
+st.sidebar.write("")
+st.sidebar.write("")
+
+expander = st.sidebar.expander("Contact")
+expander.write(
+    "I'd love your feedback. Want to collaborate? "
+    "Find me on [LinkedIn](https://www.linkedin.com/in/lopezyse/), "
+    "[Twitter](https://twitter.com/lopezyse) and "
+    "[Medium](https://lopezyse.medium.com/)"
+)
+
+
+# ======================================================================================
 # Pages
-# -------------------------
+# ======================================================================================
 if nav == "Go to homepage":
-    st.markdown("<h1 style='text-align:center; color:white; font-size:28px;'>Easy charter analyzer</h1>", unsafe_allow_html=True)
-    st.markdown("<h3 style='text-align:center; font-size:56px;'><p>🤖</p></h3>", unsafe_allow_html=True)
     st.markdown(
-        "<h3 style='text-align:center; color:grey; font-size:20px;'>Summarize, paraphrase, analyze text & more.</h3>",
+        "<h1 style='text-align:center; color:white; font-size:28px;'>Easy charter analyzer</h1>",
         unsafe_allow_html=True,
     )
-    st.markdown("---")
-    st.write("Use the menu at left to select a task.")
+    st.markdown(
+        "<h3 style='text-align:center; font-size:56px;'><p>🤖</p></h3>",
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        "<h3 style='text-align:center; color:grey; font-size:20px;'>"
+        "Summarize, paraphrase, analyze text & more. Try our models, browse their source code, and share with the world!"
+        "</h3>",
+        unsafe_allow_html=True,
+    )
+    st.markdown("___")
+    st.write("⬅️ Use the menu at left to select a task.")
+    st.markdown("___")
+    st.markdown(
+        "<h3 style='text-align:left; color:#F63366; font-size:18px;'><b>What is this App about?</b></h3>",
+        unsafe_allow_html=True,
+    )
+    st.write("Personalized NLP utilities for text + historical documents workflows.")
+    st.markdown(
+        "<h3 style='text-align:left; color:#F63366; font-size:18px;'><b>Who is this App for?</b></h3>",
+        unsafe_allow_html=True,
+    )
+    st.write("Researchers and practitioners working with historical texts and images.")
 
-elif nav == "medieval charter analyze":
-    st.markdown("<h4 style='text-align:center; color:grey;'>Accelerate knowledge with Streamlit 🤖</h4>", unsafe_allow_html=True)
+
+# --------------------------------------------------------------------------------------
+if nav == "medieval charter analyze":
+    st.markdown(
+        "<h4 style='text-align:center; color:grey;'>Accelerate knowledge with Streamlit 🤖</h4>",
+        unsafe_allow_html=True,
+    )
+    st.text("")
     p_title("Analyze charter")
+    st.text("")
 
-    s_example = "In nomine sancte et indiuidue Trinitatis , Amen . Ludovicus dei gratia Francorum Rex . Quoniam vita hominum brevis et memoria labilis est dignum est ut controversie que mediantibus sapientibus viris seu transactione seu pacifica compositione sopita sunt , scriptis insinuentur , ne in posterum recidivas pariant questiones . Notum igitur facimus universis praesentibus et futuris quod controversia que inter ecclesiam Beati Dionysii et dominum Paganum de Praellis super nemoribus de Roseai divitius agitata fuerat , aspirante divina gratia hunc finem sortita est . De universis nemoribus de Roseai , medietatem habebit ecclesia beati Dionysii videlicet de Broces , Galentrudis , de Chesnai , sicut tota vallis in se continet , de Busboum , de Buslapidis , de Cuble engarri , de Broca Ade , de Vico , de Fraibouce , sicut salvueres continet usque ad fontem de Buhi , de Brouisses , de Leaele , de Bus , iuxta culturam de nemoribus Theobaldi de magno Roseai , et siqua alia sunt que pertineant ad nemus de Roseai , omnia communia erunt excepto nemore de Fai quod totum est Ecclesie beati Dionysii . Reliquam vero medietatem omnium predictorum nemorum tenebit praenominatus Paganus de ecclesia beati Dionysii , in feodi illius quem ab ipso tenebat incrementum . Si vero abbas qui pro tempore fuerit sive Paganus predictus , aut successor eius , nemus vendere voluerit , alter alterum prohibere non poterit , ipsa tamen venditio ab utroque communiter fiet . Precium vero quod inde percipietur aequaliter inter se divident , uterque suum servientem ponet qui nemus custodiat : Ita quod serviens ecclesie Domino Pagano et econverso serviens Domini Pagani ecclesie fidelitatem iurabit . Si vero serviens ecclesie aliquem in forisfacto nemoris ceperit , quicquid ab eo acceperit , ad villas Maflers portabit . Similiter servienti domini Pagani quod inde acceperit ad Francovillam ferre licebit . Ita tamen quod serviens Ecclesie domino Pagano et vicissim serviens domini Pagani , preposito beati Dionysi forisfacta omnia nunciabit et si de forisfactis querela aliqua orta fuerit , ambo pariter eam tractabunt . Si vero aliqua pars nemorum eradicata fuerit , et in culturam redacta eadem cultura communis erit salvo iure ecclesie beati Dionysii in decima . Iuravit itaque dominus Paganus quod hanc compositionem firmam tenebit et contra omnes de cognatione sua et contra alios de iure ad ipsum calumniantes ecclesiam immunem faciet et illesam custodiet et super hoc feodum suum obligavit . Iuraverunt quoque duo fratres sui videlicet Adam et Petrus se pretaxatam compositionem firmiter observaturos . Agnes etiam mater atque Richoldis soror eorumdem prescripte transactioni assensum prebuerunt . Et ut hoc ratum deinceps et inconcussum permaneat , scribi et sigilli nostri auctoritate precepimus communiri . Actum Parisius anno ab Incarnatione Domini M C LXX III . Astantibus in palatio nostro quorum nomina supposita sunt et signa . Signum Theobaldi comitis Dapiferi nostri . Signum Matthaei Camerarii . Signum Guidonis Buticularii . Signum Radulfi Constabularii. Vacante Cancelaria. "
+    source = st.radio(
+        "How would you like to start?",
+        ("I want to input some text", "I want to upload a file"),
+    )
+    st.text("")
 
-    source = st.radio("How would you like to start?", ("I want to input some text", "I want to upload a file"))
+    s_example = (
+        "In nomine sancte et indiuidue Trinitatis , Amen . Ludovicus dei gratia Francorum Rex . "
+        "Quoniam vita hominum brevis et memoria labilis est dignum est ut controversie que mediantibus "
+        "sapientibus viris seu transactione seu pacifica compositione sopita sunt , scriptis insinuentur , "
+        "ne in posterum recidivas pariant questiones . Notum igitur facimus universis praesentibus et futuris "
+        "quod controversia que inter ecclesiam Beati Dionysii et dominum Paganum de Praellis super nemoribus "
+        "de Roseai divitius agitata fuerat , aspirante divina gratia hunc finem sortita est ."
+    )
 
     if source == "I want to input some text":
         input_su = st.text_area(
@@ -209,91 +386,200 @@ elif nav == "medieval charter analyze":
                 st.error("Please enter a text of minimum 1,000 characters")
             else:
                 with st.spinner("Processing..."):
-                    st.markdown("---")
-                    st.write("Named entities in Flat mode")
-                    st.write(ner_html(input_su), unsafe_allow_html=True)
+                    # NER + classification + discourse parts
+                    try:
+                        st.markdown("___")
+                        st.write("Named entities in Flat mode")
+                        st.write(ner_html(input_su), unsafe_allow_html=True)
 
-                    st.markdown("---")
-                    st.success(classify_charter(input_su))
+                        st.markdown("___")
+                        st.success(class_acta(input_su))
 
-                    st.markdown("---")
-                    st.write("Diplomatics parts")
-                    st.write(parts_dis_html(input_su), unsafe_allow_html=True)
+                        st.markdown("___")
+                        st.write("Diplomatics parts")
+                        st.write(parts_dis_html(input_su), unsafe_allow_html=True)
 
-    else:
-        file = st.file_uploader("Upload your file here", type=["jpg", "jpeg", "png"])
+                    except Exception as e:
+                        st.exception(e)
+
+    if source == "I want to upload a file":
+        file = st.file_uploader("Upload your file here", type=["jpg", "jpeg", "png", "tif", "tiff"])
         if file is not None:
             with st.spinner("Processing..."):
-                img = read_image_upload(file)
-                st.image(img, width=250)
-                seg = kraken_segment(img)
-                st.write(kraken_transcribe(img, seg), unsafe_allow_html=True)
+                try:
+                    img = read_image(file)
+                    st.image(img, width=350)
 
-elif nav == "Paraphrase text":
-    # IMPORT PEREZOSO: sólo se importa si entras a esta página
-    try:
-        from googletrans import Translator
-        from textattack.augmentation import EmbeddingAugmenter, WordNetAugmenter
-    except Exception as e:
-        st.error(f"Missing dependencies for Paraphrase page: {e}")
-        st.stop()
+                    seg = segmentation(img)
+                    st.write(transcript(img, seg), unsafe_allow_html=True)
+                    st.success("Done")
 
+                except Exception as e:
+                    st.exception(e)
+
+
+# --------------------------------------------------------------------------------------
+if nav == "Handwritten text recognition":
+    st.markdown(
+        "<h4 style='text-align:center; color:grey;'>Kraken pipeline (segmentation + recognition)</h4>",
+        unsafe_allow_html=True,
+    )
+    st.text("")
+    p_title("Handwritten text recognition")
+    st.text("")
+
+    file = st.file_uploader("Upload an image", type=["jpg", "jpeg", "png", "tif", "tiff"])
+    if file is not None:
+        with st.spinner("Processing..."):
+            try:
+                img = read_image(file)
+                st.image(img, width=450)
+                seg = segmentation(img)
+                st.write(transcript(img, seg), unsafe_allow_html=True)
+            except Exception as e:
+                st.exception(e)
+
+
+# --------------------------------------------------------------------------------------
+if nav == "Paraphrase text":
+    st.markdown(
+        "<h4 style='text-align:center; color:grey;'>Paraphrase utilities</h4>",
+        unsafe_allow_html=True,
+    )
+    st.text("")
     p_title("Paraphrase")
-    p_example = "Health is the level of functional or metabolic efficiency..."
-    input_pa = st.text_area("Input your own text in English (max 500 chars)", max_chars=500, value=p_example, height=160)
+    st.text("")
+
+    p_example = (
+        "Health is the level of functional or metabolic efficiency of a living organism. "
+        "In humans, it is the ability of individuals or communities to adapt and self-manage when facing "
+        "physical, mental, or social challenges."
+    )
+
+    input_pa = st.text_area(
+        "Input your own text in English (max 500 chars)",
+        max_chars=500,
+        value=p_example,
+        height=160,
+    )
 
     if st.button("Paraphrase"):
-        with st.spinner("Wait for it..."):
-            translator = Translator()
-            mid = translator.translate(input_pa, dest="fr").text
-            mid2 = translator.translate(mid, dest="de").text
-            back = translator.translate(mid2, dest="en").text
-            st.markdown("---")
-            st.write("Back Translation Model")
-            st.success(back)
+        if not input_pa.strip():
+            st.error("Please enter some text")
+        else:
+            with st.spinner("Processing..."):
+                try:
+                    from googletrans import Translator
+                    from textattack.augmentation import EmbeddingAugmenter, WordNetAugmenter
 
-            e_augmenter = EmbeddingAugmenter(transformations_per_example=1, pct_words_to_swap=0.3)
-            st.markdown("---")
-            st.write("Embedding Augmenter Model")
-            st.success(e_augmenter.augment(input_pa))
+                    translator = Translator()
+                    mid = translator.translate(input_pa, dest="fr").text
+                    mid2 = translator.translate(mid, dest="de").text
+                    back = translator.translate(mid2, dest="en").text
 
-            w_augmenter = WordNetAugmenter(transformations_per_example=1, pct_words_to_swap=0.3)
-            st.markdown("---")
-            st.write("WordNet Augmenter Model")
-            st.success(w_augmenter.augment(input_pa))
+                    st.markdown("___")
+                    st.write("Back Translation Model")
+                    st.success(back)
 
-elif nav == "Analyze text":
-    # IMPORT PEREZOSO
-    try:
+                    e_augmenter = EmbeddingAugmenter(transformations_per_example=1, pct_words_to_swap=0.3)
+                    e_a = e_augmenter.augment(input_pa)
+
+                    st.markdown("___")
+                    st.write("Embedding Augmenter Model")
+                    st.success(e_a)
+
+                    w_augmenter = WordNetAugmenter(transformations_per_example=1, pct_words_to_swap=0.3)
+                    w_a = w_augmenter.augment(input_pa)
+
+                    st.markdown("___")
+                    st.write("WordNet Augmenter Model")
+                    st.success(w_a)
+
+                except Exception as e:
+                    st.exception(e)
+
+
+# --------------------------------------------------------------------------------------
+if nav == "Analyze text":
+    st.markdown(
+        "<h4 style='text-align:center; color:grey;'>Basic readability stats</h4>",
+        unsafe_allow_html=True,
+    )
+    st.text("")
+    p_title("Analyze text")
+    st.text("")
+
+    a_example = (
+        "Artificial intelligence (AI) is intelligence demonstrated by machines, as opposed to the natural "
+        "intelligence displayed by humans or animals."
+    )
+
+    source = st.radio(
+        "How would you like to start?",
+        ("I want to input some text", "I want to upload a file"),
+    )
+    st.text("")
+
+    def _analyze_text(raw: str):
         import nltk
         import readtime
         import textstat
         from nltk.tokenize import word_tokenize
-    except Exception as e:
-        st.error(f"Missing dependencies for Analyze page: {e}")
-        st.stop()
 
-    p_title("Analyze text")
-    a_example = "Artificial intelligence (AI) is intelligence demonstrated by machines..."
-    input_me = st.text_area("Input your own text in English (max 10,000 chars)", max_chars=10000, value=a_example, height=330)
+        nltk.download("punkt", quiet=True)
 
-    if st.button("Analyze"):
-        with st.spinner("Processing..."):
-            nltk.download("punkt", quiet=True)
-            rt = readtime.of_text(input_me)
-            tc = textstat.flesch_reading_ease(input_me)
-            tokenized_words = word_tokenize(input_me)
-            lr = round(len(set(tokenized_words)) / max(1, len(tokenized_words)), 2)
-            n_s = textstat.sentence_count(input_me)
+        rt = readtime.of_text(raw)
+        tc = textstat.flesch_reading_ease(raw)
 
-            st.markdown("---")
-            st.write("Reading Time"); st.write(rt)
-            st.markdown("---")
-            st.write("Text Complexity"); st.write(tc)
-            st.markdown("---")
-            st.write("Lexical Richness"); st.write(lr)
-            st.markdown("---")
-            st.write("Number of sentences"); st.write(n_s)
+        tokenized_words = word_tokenize(raw)
+        lr = (len(set(tokenized_words)) / max(len(tokenized_words), 1)) if tokenized_words else 0.0
+        lr = round(lr, 2)
 
-else:
-    st.info("Page not implemented yet.")
+        n_s = textstat.sentence_count(raw)
+
+        st.markdown("___")
+        st.text("Reading Time")
+        st.write(rt)
+
+        st.markdown("___")
+        st.text("Text Complexity (Flesch Reading Ease)")
+        st.write(tc)
+
+        st.markdown("___")
+        st.text("Lexical Richness (distinct words / total words)")
+        st.write(lr)
+
+        st.markdown("___")
+        st.text("Number of sentences")
+        st.write(n_s)
+
+    if source == "I want to input some text":
+        input_me = st.text_area(
+            "Input your own text in English (max 10,000 chars)",
+            max_chars=10000,
+            value=a_example,
+            height=330,
+        )
+        if st.button("Analyze"):
+            if len(input_me) > 10000:
+                st.error("Please enter a text of maximum 10,000 characters")
+            else:
+                with st.spinner("Processing..."):
+                    try:
+                        _analyze_text(input_me)
+                    except Exception as e:
+                        st.exception(e)
+
+    if source == "I want to upload a file":
+        file = st.file_uploader("Upload a .txt file", type=["txt"])
+        if file is not None:
+            with st.spinner("Processing..."):
+                try:
+                    stringio = StringIO(file.getvalue().decode("utf-8", errors="replace"))
+                    string_data = stringio.read()
+                    if len(string_data) > 10000:
+                        st.error("Please upload a file of maximum 10,000 characters")
+                    else:
+                        _analyze_text(string_data)
+                except Exception as e:
+                    st.exception(e)
