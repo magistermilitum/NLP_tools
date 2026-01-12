@@ -1,19 +1,7 @@
-streamlit==1.5.0
-protobuf==3.20.3
-
-Pillow>=10.0.0
-numpy<2
-
-# Visión / OCR
+streamlit>=1.30,<2
+flair>=0.13
+torch
 kraken
+pillow
+numpy<2
 opencv-python-headless
-
-# NLP principal
-flair
-nltk
-readtime
-textstat
-sumy
-googletrans==3.1.0a0
-
-
