@@ -4,17 +4,17 @@ pandas==1.3.0
 readtime==1.1.1
 streamlit==1.5.0
 textstat==0.7.1
-tokenizers==0.10.3
 sumy==0.8.1
 
-# FIX: versión compatible con numpy moderno
 textattack==0.3.10
+
+# para evitar el conflicto y estabilizar el solver:
+transformers==4.35.2
+tokenizers==0.14.1
 
 Flair==0.10
 kraken==4.1.0
 Pillow==7.1.2
 shapely==1.8
-
-# FIX: deja SOLO uno (en cloud, mejor headless)
 opencv-python-headless==4.7.0.72
 
