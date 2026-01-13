@@ -236,7 +236,7 @@ def class_acta(text: str) -> str:
     clf.predict(sent)
     if not sent.labels:
         return "Most probably type: (no label)"
-    return f"Most probably type: {sent.labels[0]}"
+    return f"Most probably type: {sent.labels[0].value}"
 
 
 # ======================================================================================
