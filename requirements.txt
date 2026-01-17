@@ -1,7 +1,7 @@
 streamlit>=1.30,<2
 flair>=0.13
 torch
-kraken
+kraken==4.1.0
 pillow
 numpy<2
 opencv-python-headless
