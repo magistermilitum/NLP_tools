@@ -177,7 +177,7 @@ def ner_html(text: str) -> str:
 def parts_dis_html(text: str) -> str:
     """
     Diplomatic parts (your discourse tagger) + NER highlight inside each part.
-    FIXED: uses span.tokens and span.get_label, no string parsing.
+    FIXED: uses span.tokens and span.get_label, no string parsing in this case.
     """
     from flair.data import Sentence
 
